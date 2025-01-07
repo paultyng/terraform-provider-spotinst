@@ -152,6 +152,7 @@ const (
 	OceanSpark                 ResourceAffinity = "Ocean_Spark"
 	OceanSparkIngress          ResourceAffinity = "Ocean_Spark_Ingress"
 	OceanSparkWebhook          ResourceAffinity = "Ocean_Spark_Webhook"
+	OceanSparkWorkspaces       ResourceAffinity = "Ocean_Spark_Workspaces"
 	OceanSparkCompute          ResourceAffinity = "Ocean_Spark_Compute"
 	OceanSparkLogCollection    ResourceAffinity = "Ocean_Spark_Log_Collection"
 	OceanSparkVirtualNodeGroup ResourceAffinity = "Ocean_Spark_Virtual_Node_Group"

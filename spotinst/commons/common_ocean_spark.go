@@ -112,6 +112,7 @@ func NewSparkClusterWrapper() *SparkClusterWrapper {
 				Ingress:       &spark.IngressConfig{},
 				Webhook:       &spark.WebhookConfig{},
 				Compute:       &spark.ComputeConfig{},
+				Workspaces:    &spark.WorkspacesConfig{},
 				LogCollection: &spark.LogCollectionConfig{},
 			},
 		},
