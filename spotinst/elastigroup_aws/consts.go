@@ -37,6 +37,8 @@ const (
 	Region                     commons.FieldName = "region"
 	SubnetIDs                  commons.FieldName = "subnet_ids"
 	AvailabilityZones          commons.FieldName = "availability_zones"
+	PlacementGroupName         commons.FieldName = "placement_group_name"
+	AvailabilityZoneName       commons.FieldName = "availability_zones_name"
 	PreferredAvailabilityZones commons.FieldName = "preferred_availability_zones"
 	ElasticLoadBalancers       commons.FieldName = "elastic_load_balancers"
 	TargetGroupArns            commons.FieldName = "target_group_arns"

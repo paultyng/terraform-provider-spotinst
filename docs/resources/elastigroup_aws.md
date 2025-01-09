@@ -28,6 +28,13 @@ resource "spotinst_elastigroup_aws" "default-elastigroup" {
   region     = "us-west-2"
   subnet_ids = ["sb-123456", "sb-456789"]
 
+  # When availability_zones is set, subnet_ids should be left unused.
+  availability_zones {
+    availability_zones_name    = "us-west-2a"
+    subnet_ids                 = ["subnet-123456"]
+    placement_group_name       = "placementGroupName"
+  }
+
   image_id             = "ami-a27d8fda"
   iam_instance_profile = "iam-profile"
   key_name             = "my-key.ssh"
@@ -160,9 +167,10 @@ The following arguments are supported:
 * `product` - (Required) Operation system type. Valid values: `"Linux/UNIX"`, `"SUSE Linux"`, `"Windows"`. 
 For EC2 Classic instances:  `"Linux/UNIX (Amazon VPC)"`, `"SUSE Linux (Amazon VPC)"`, `"Windows (Amazon VPC)"`.    
 
-* `availability_zones` - (Optional) List of Strings of availability zones. When this parameter is set, `subnet_ids` should be left unused.
-Note: `availability_zones` naming syntax follows the convention `availability-zone:subnet:placement-group-name`. For example, to set an AZ in `us-east-1` with subnet `subnet-123456` and placement group `ClusterI03`, you would set:
-`availability_zones = ["us-east-1a:subnet-123456:ClusterI03"]`
+* `availability_zones` - (Optional) One or more availability Zones for the group. When this parameter is set, compute.subnetIds should be left unused.
+    * `availability_zones_name` - (Required) The Availability Zone name.
+    * `subnet_ids` - (Optional) A comma-separated list of subnet identifiers for your group.
+    * `placement_group_name` - (Optional) specify a Placement Group name, the instances will be launched in the Placement Group for the AZ.
 
 * `subnet_ids` - (Optional) List of Strings of subnet identifiers.
 Note: When this parameter is set, `availability_zones` should be left unused.

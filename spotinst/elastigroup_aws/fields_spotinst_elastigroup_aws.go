@@ -440,6 +440,7 @@ func Setup(fieldsMap map[commons.FieldName]*commons.GenericField) {
 			Elem:          &schema.Schema{Type: schema.TypeString},
 			ConflictsWith: []string{string(AvailabilityZones)},
 			Optional:      true,
+			Deprecated:    "This field will soon be deprecated and handled by availability_zones",
 		},
 		func(resourceObject interface{}, resourceData *schema.ResourceData, meta interface{}) error {
 			egWrapper := resourceObject.(*commons.ElastigroupWrapper)
@@ -536,23 +537,37 @@ func Setup(fieldsMap map[commons.FieldName]*commons.GenericField) {
 		AvailabilityZones,
 		&schema.Schema{
 			Type:     schema.TypeList,
-			Elem:     &schema.Schema{Type: schema.TypeString},
 			Optional: true,
-		},
-		func(resourceObject interface{}, resourceData *schema.ResourceData, meta interface{}) error {
-			// Skip
-			return nil
+			Elem: &schema.Resource{
+				Schema: map[string]*schema.Schema{
+					string(SubnetIDs): {
+						Type:     schema.TypeList,
+						Optional: true,
+						Elem: &schema.Schema{
+							Type: schema.TypeString},
+					},
+					string(AvailabilityZoneName): {
+						Type:     schema.TypeString,
+						Required: true,
+					},
+					string(PlacementGroupName): {
+						Type:     schema.TypeString,
+						Optional: true,
+					},
+				},
+			},
 		},
 		func(resourceObject interface{}, resourceData *schema.ResourceData, meta interface{}) error {
 			egWrapper := resourceObject.(*commons.ElastigroupWrapper)
 			elastigroup := egWrapper.GetElastigroup()
-			if _, exists := resourceData.GetOk(string(SubnetIDs)); !exists {
-				if value, ok := resourceData.GetOk(string(AvailabilityZones)); ok {
-					if zones, err := expandAvailabilityZonesSlice(value); err != nil {
-						return err
-					} else {
-						elastigroup.Compute.SetAvailabilityZones(zones)
-					}
+			var result []interface{} = nil
+			if elastigroup.Compute != nil && elastigroup.Compute.AvailabilityZones != nil {
+				az := elastigroup.Compute.AvailabilityZones
+				result = flattenAvailabilityZones(az)
+			}
+			if result != nil {
+				if err := resourceData.Set(string(AvailabilityZones), result); err != nil {
+					return fmt.Errorf("failed to set availabilityZone configuration: %#v", err)
 				}
 			}
 			return nil
@@ -560,15 +575,27 @@ func Setup(fieldsMap map[commons.FieldName]*commons.GenericField) {
 		func(resourceObject interface{}, resourceData *schema.ResourceData, meta interface{}) error {
 			egWrapper := resourceObject.(*commons.ElastigroupWrapper)
 			elastigroup := egWrapper.GetElastigroup()
-			if _, exists := resourceData.GetOk(string(SubnetIDs)); !exists {
-				if value, ok := resourceData.GetOk(string(AvailabilityZones)); ok {
-					if zones, err := expandAvailabilityZonesSlice(value); err != nil {
-						return err
-					} else {
-						elastigroup.Compute.SetAvailabilityZones(zones)
-					}
+			if v, ok := resourceData.GetOk(string(AvailabilityZones)); ok {
+				if availabilityZones, err := expandAvailabilityZones(v); err != nil {
+					return err
+				} else {
+					elastigroup.Compute.SetAvailabilityZones(availabilityZones)
 				}
 			}
+			return nil
+		},
+		func(resourceObject interface{}, resourceData *schema.ResourceData, meta interface{}) error {
+			egWrapper := resourceObject.(*commons.ElastigroupWrapper)
+			elastigroup := egWrapper.GetElastigroup()
+			var result []*aws.AvailabilityZone = nil
+			if v, ok := resourceData.GetOk(string(AvailabilityZones)); ok {
+				if availabilityZones, err := expandAvailabilityZones(v); err != nil {
+					return err
+				} else {
+					result = availabilityZones
+				}
+			}
+			elastigroup.Compute.SetAvailabilityZones(result)
 			return nil
 		},
 		nil,
@@ -1383,4 +1410,50 @@ func extractTargetGroupFromArn(arn string) (string, error) {
 		return "", fmt.Errorf("cannot determine targret group name from target group arn")
 	}
 	return name, nil
+}
+
+func expandAvailabilityZones(data interface{}) ([]*aws.AvailabilityZone, error) {
+	if list := data.([]interface{}); len(list) > 0 {
+		availabilityZones := make([]*aws.AvailabilityZone, 0, len(list))
+		for _, item := range list {
+			m := item.(map[string]interface{})
+			availabilityZone := &aws.AvailabilityZone{}
+
+			if v, ok := m[string(AvailabilityZoneName)].(string); ok && v != "" {
+				availabilityZone.SetName(spotinst.String(v))
+			}
+
+			if v, ok := m[string(PlacementGroupName)].(string); ok && v != "" {
+				availabilityZone.SetPlacementGroupName(spotinst.String(v))
+			}
+
+			if v, ok := m[string(SubnetIDs)]; ok && len(v.([]interface{})) > 0 {
+				if subnetIDs, err := expandSubnetIDs(v); err != nil {
+					return nil, err
+				} else {
+					availabilityZone.SetSubnetIDs(subnetIDs)
+				}
+			}
+			availabilityZones = append(availabilityZones, availabilityZone)
+		}
+		return availabilityZones, nil
+	}
+	return nil, nil
+
+}
+
+func flattenAvailabilityZones(availabilityZones []*aws.AvailabilityZone) []interface{} {
+	result := make([]interface{}, 0, len(availabilityZones))
+
+	for _, availabilityZone := range availabilityZones {
+		m := make(map[string]interface{})
+		if availabilityZone.SubnetIDs != nil {
+			m[string(SubnetIDs)] = spotinst.StringSlice(availabilityZone.SubnetIDs)
+		}
+		m[string(AvailabilityZoneName)] = spotinst.StringValue(availabilityZone.Name)
+		m[string(PlacementGroupName)] = spotinst.StringValue(availabilityZone.PlacementGroupName)
+
+		result = append(result, m)
+	}
+	return result
 }
