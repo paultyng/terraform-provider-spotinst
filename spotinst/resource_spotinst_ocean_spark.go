@@ -22,6 +22,7 @@ import (
 	"github.com/spotinst/terraform-provider-spotinst/spotinst/ocean_spark_log_collection"
 	"github.com/spotinst/terraform-provider-spotinst/spotinst/ocean_spark_spark"
 	"github.com/spotinst/terraform-provider-spotinst/spotinst/ocean_spark_webhook"
+	"github.com/spotinst/terraform-provider-spotinst/spotinst/ocean_spark_workspaces"
 )
 
 const (
@@ -54,6 +55,7 @@ func setupSparkClusterResource() {
 	ocean_spark_webhook.Setup(fieldsMap)
 	ocean_spark_compute.Setup(fieldsMap)
 	ocean_spark_log_collection.Setup(fieldsMap)
+	ocean_spark_workspaces.Setup(fieldsMap)
 	ocean_spark_spark.Setup(fieldsMap)
 
 	commons.OceanSparkResource = commons.NewOceanSparkResource(fieldsMap)

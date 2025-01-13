@@ -447,6 +447,68 @@ func TestAccSpotinstOceanSpark_withLogCollectionConfig(t *testing.T) {
 	})
 }
 
+func TestAccSpotinstOceanSpark_withWorkspacesConfig(t *testing.T) {
+	resourceName := createOceanSparkResourceName(oceanClusterID)
+
+	var cluster spark.Cluster
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t, "aws") },
+		Providers:    TestAccProviders,
+		CheckDestroy: testOceanSparkAWSDestroy,
+
+		Steps: []resource.TestStep{
+			{
+				Config: createOceanSparkTerraform(&SparkClusterConfigMetadata{
+					oceanClusterID: oceanClusterID,
+					fieldsToAppend: testConfigWithWorkspacesCreateWithOverrideSet,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testCheckOceanSparkExists(&cluster, resourceName),
+					testCheckOceanSparkAttributes(&cluster, oceanClusterID),
+					resource.TestCheckResourceAttr(resourceName, "workspaces.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "workspaces.0.storage_class_override", "gp2"),
+				),
+			},
+			{
+				Config: createOceanSparkTerraform(&SparkClusterConfigMetadata{
+					oceanClusterID: oceanClusterID,
+					fieldsToAppend: testConfigWithWorkspacesUpdateWithOverrideEmptyString,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testCheckOceanSparkExists(&cluster, resourceName),
+					testCheckOceanSparkAttributes(&cluster, oceanClusterID),
+					resource.TestCheckResourceAttr(resourceName, "workspaces.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "workspaces.0.storage_class_override", ""),
+				),
+			},
+			{
+				Config: createOceanSparkTerraform(&SparkClusterConfigMetadata{
+					oceanClusterID: oceanClusterID,
+					fieldsToAppend: testConfigWithWorkspacesUpdateWithOverrideSet,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testCheckOceanSparkExists(&cluster, resourceName),
+					testCheckOceanSparkAttributes(&cluster, oceanClusterID),
+					resource.TestCheckResourceAttr(resourceName, "workspaces.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "workspaces.0.storage_class_override", "pvc-ebs"),
+				),
+			},
+			{
+				Config: createOceanSparkTerraform(&SparkClusterConfigMetadata{
+					oceanClusterID: oceanClusterID,
+					fieldsToAppend: testConfigWithWorkspacesUpdateEmpty,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testCheckOceanSparkExists(&cluster, resourceName),
+					testCheckOceanSparkAttributes(&cluster, oceanClusterID),
+					resource.TestCheckResourceAttr(resourceName, "workspaces.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "workspaces.0.storage_class_override", ""),
+				),
+			},
+		},
+	})
+}
+
 func TestAccSpotinstOceanSpark_withSparkConfig(t *testing.T) {
 	resourceName := createOceanSparkResourceName(oceanClusterID)
 
@@ -864,6 +926,36 @@ const testConfigWithLogCollectionUpdate = `
  log_collection {
 
     collect_app_logs = false
+
+ }
+`
+
+const testConfigWithWorkspacesCreateWithOverrideSet = `
+ workspaces {
+  
+    storage_class_override = "gp2"
+
+ }
+`
+
+const testConfigWithWorkspacesUpdateWithOverrideSet = `
+ workspaces {
+  
+    storage_class_override = "pvc-ebs"
+
+ }
+`
+
+const testConfigWithWorkspacesUpdateWithOverrideEmptyString = `
+ workspaces {
+  
+    storage_class_override = ""
+
+ }
+`
+
+const testConfigWithWorkspacesUpdateEmpty = `
+ workspaces {
 
  }
 `
